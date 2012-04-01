@@ -39,8 +39,9 @@ int main() {
 	BaseSet baseset;
 	MemberMultiset membermultiset;
 
+#define N (10*1000*1000)
 	std::vector<MyClass> values;
-	for(int i = 0; i < 1000000; ++i)  values.push_back(MyClass(i));
+	for(int i = 0; i < N; ++i)  values.push_back(MyClass(i));
 
 	//Check that size optimization is activated in the base hook 
 	assert(sizeof(avl_set_base_hook<optimize_size<true> >) == 3*sizeof(void*));

@@ -20,6 +20,8 @@ typedef struct TNode {
 	int unused; // «удалённая»; это поле можно использовать и для других флагов
 } TNode;
 
+// Разделяем массив структур на массив отдельных полей
+
 // типы функций - обработчиков событий
 
 typedef int (*FuncOnRotate)(TNodeIndex nodeIndex1, TNodeIndex nodeIndex2, const char *stringAction); // LEFT_ROTATE, RIGHT_ROTATE
@@ -82,7 +84,8 @@ TNodeIndex SBT_FindNextUsedNode(TNodeIndex s);
 
 // Get
 
-TNode *GetPointerToNode(TNodeIndex t);
+// to replace, TNode *GetPointerToNode(TNodeIndex t);
+
 TNodeIndex GetRootIndex();
 TNumber GetValueByIndex(TNodeIndex t);
 

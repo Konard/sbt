@@ -7,15 +7,15 @@
 
 int main() {
 
-//#define N (10*1000*1000)
-#define N 100000
+#define N (10*1000*1000)
+//#define N 100000
 	// седьмой пример
 	printf("добавление ...\n");
 	for (int i = 0; i < N; i++) {
 		SBT_AddNode(i);
 //		SBT_CheckAllNodesSize();
 	}
-//	return 0;
+	return 0;
 
 	printf("удаление ...\n");
 	for (int i = 0; i < N; i++) {

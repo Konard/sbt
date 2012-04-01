@@ -11,7 +11,19 @@ pthread_mutex_t _lock_nodes = PTHREAD_MUTEX_INITIALIZER;
 
 // переменные модуля
 
-/* to replace, TNode _nodes[SBT_MAX_NODES];
+
+#ifdef SBT_ARRAYS
+TNumber _a_value[SBT_MAX_NODES]; // значение, привязанное к ноде
+TNodeIndex _a_parent[SBT_MAX_NODES]; // ссылка на уровень выше
+TNodeIndex _a_left[SBT_MAX_NODES];  // ссылка на левое поддерево, = -1, если нет дочерних вершин
+TNodeIndex _a_right[SBT_MAX_NODES]; // ссылка на правое поддерево
+TNodeSize _a_size[SBT_MAX_NODES]; // size в понимании SBT
+int _a_unused[SBT_MAX_NODES]; // «удалённая»; это поле можно использовать и для других флагов
+#else
+#define _Tree(idx,kind) _nodes[idx].kind
+TNode _nodes[SBT_MAX_NODES];
+#endif
+/* to replace, 
 typedef struct TNode {
 	TNumber value; // значение, привязанное к ноде
 	TNodeIndex parent; // ссылка на уровень выше
@@ -22,18 +34,10 @@ typedef struct TNode {
 } TNode;
 */
 
-TNumber _a_value[SBT_MAX_NODES]; // значение, привязанное к ноде
-TNodeIndex _a_parent[SBT_MAX_NODES]; // ссылка на уровень выше
-TNodeIndex _a_left[SBT_MAX_NODES];  // ссылка на левое поддерево, = -1, если нет дочерних вершин
-TNodeIndex _a_right[SBT_MAX_NODES]; // ссылка на правое поддерево
-TNodeSize _a_size[SBT_MAX_NODES]; // size в понимании SBT
-int _a_unused[SBT_MAX_NODES]; // «удалённая»; это поле можно использовать и для других флагов
-
-#define SBT_ARRAYS
 #ifdef SBT_ARRAYS
 #define _Tree(idx,kind) _a_##kind[idx]
 #else
-#define _Tree(idx,kind) _nodes[idx].##kind
+#define _Tree(idx,kind) _nodes[idx].kind
 #endif
 
 

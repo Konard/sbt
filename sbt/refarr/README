@@ -1,4 +1,4 @@
-sbt idx-version:
+sbt ref-version:
 
 1) #define SBT_ARRAYS
 (на основе индексов + использование раздельных массивов - для проверки ускорения)

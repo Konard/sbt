@@ -9,13 +9,17 @@ int main() {
 
 #define N (10*1000*1000)
 //#define N 100000
+//#define N 100
 	// седьмой пример
 	printf("добавление ...\n");
 	for (int i = 0; i < N; i++) {
 		SBT_AddNode(i);
+//		SBT_AddNodeUniq(i);
 //		SBT_CheckAllNodesSize();
 	}
-	return 0;
+//	SBT_DeleteNode(10);
+//	SBT_PrintAllNodes();
+//	return 0;
 
 	printf("удаление ...\n");
 	for (int i = 0; i < N; i++) {
@@ -35,8 +39,8 @@ int main() {
 	SBT_CheckAllNodesBalance();
 
 //	    SBT_DeleteAllNodes(i);
+	SBT_PrintAllNodes();
 //	SBT_DumpAllNodes();
-//	SBT_PrintAllNodes();
 
 	return 0;
 }

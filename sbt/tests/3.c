@@ -22,11 +22,13 @@ int main(int argc, char **argv) {
 		rnd ^= (rnd >> RND_B);
 		rnd ^= (rnd << RND_C);
 		//SBT_AddNodeUniq((rnd)&0x000000FF); // вставка с отказами
-		SBT_AddNode((rnd)&0x000000FF); // вставка без отказов
+		SBT_AddNodeUniq((rnd)&0x00FFFFFF); // вставка без отказов
+		//SBT_AddNode((rnd)&0x00FFFFFF); // вставка без отказов
 	}
+	return 0;
 
 	// результат работы
-	SBT_CheckAllNodes();
+//	SBT_CheckAllNodes();
 //	SBT_PrintAllNodes();
 //	SBT_DumpAllNodes();
 	//return 0;

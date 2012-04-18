@@ -425,7 +425,7 @@ int SBT_Maintain(TNodeIndex t, TNodeIndex parent) {
 
 // AddNode, Добавить вершину в поддерево t, без проверки уникальности (t - куда, parent - родительская)
 
-inline int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
+int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 	if (_n_nodes <= 0) {
 		TNodeIndex t_new = SBT_AllocateNode();
 		_Tree(t_new,value) = value;
@@ -470,13 +470,13 @@ inline int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 
 // Добавить вершину без проверки уникальности value
 
-inline int SBT_AddNode(TNumber value) {
+int SBT_AddNode(TNumber value) {
 	return SBT_AddNode_At(value, _tree_root, -1);
 }
 
 // Добавление вершины только если такой же (с таким же значением) в дереве нет
 
-inline int SBT_AddNodeUniq(TNumber value) {
+int SBT_AddNodeUniq(TNumber value) {
 
     TNodeIndex t = SBT_FindNode(value);
 	if (t == -1) {

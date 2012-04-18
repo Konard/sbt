@@ -1,32 +1,37 @@
 
-#include "sbt.h"
+/*
+ * Само-балансирующееся по размеру дерево : Size-balanced tree
+ * документация по проекту преимущественно на русском языке
+ * 
+ * Лицензия: CC0 1.0 Universal, http://creativecommons.org/publicdomain/zero/1.0/legalcode
+ * перевод лицензии на русский язык: http://wiki.creativecommons.org/images/6/61/CC0_rus.pdf
+ */
 
+#include "sbt.h"
 #include <stdio.h> // printf
 
-#ifdef __LINUX__
-#include <pthread.h> // pthread_mutex_*
-// узкое место при доступе из многих потоков - глобальная блокировка таблицы _nodes
-pthread_mutex_t _lock_nodes = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-// переменные модуля
-
+// внутренние переменные модуля
 
 #ifdef SBT_ARRAYS
+  
+  // раздельными массивами
+  
 TNumber _a_value[SBT_MAX_NODES]; // значение, привязанное к ноде
-/* TNodeIndex _a_parent[SBT_MAX_NODES]; // ссылка на уровень выше (избавляемся) */
 TNodeIndex _a_left[SBT_MAX_NODES];  // ссылка на левое поддерево, = -1, если нет дочерних вершин
 TNodeIndex _a_right[SBT_MAX_NODES]; // ссылка на правое поддерево
 TNodeSize _a_size[SBT_MAX_NODES]; // size в понимании SBT
 int _a_unused[SBT_MAX_NODES]; // «удалённая»; это поле можно использовать и для других флагов
 #else
+
+  // одним массивом
+  
 #define _Tree(idx,kind) _nodes[idx].kind
 TNode _nodes[SBT_MAX_NODES];
 #endif
-/* to replace, 
+
+/*
 typedef struct TNode {
 	TNumber value; // значение, привязанное к ноде
-	TNodeIndex parent; // ссылка на уровень выше
 	TNodeIndex left;  // ссылка на левое поддерево, = -1, если нет дочерних вершин
 	TNodeIndex right; // ссылка на правое поддерево
 	TNodeSize size; // size в понимании SBT
@@ -34,19 +39,19 @@ typedef struct TNode {
 } TNode;
 */
 
+
+// функция-макрос для доступа к массиву
+
 #ifdef SBT_ARRAYS
 #define _Tree(idx,kind) _a_##kind[idx]
 #else
 #define _Tree(idx,kind) _nodes[idx].kind
 #endif
 
-
 TNodeIndex _n_nodes = 0; // число вершин в дереве
-TNodeIndex _tree_root = -1; // дерево
-TNodeIndex _tree_unused = -1; // список неиспользованных
+TNodeIndex _tree_root = -1; // дерево, использованные ноды
+TNodeIndex _tree_unused = -1; // список неиспользованных нодов
 TNodeIndex _n_clean = SBT_MAX_NODES; // хвост "чистых"; только уменьшается - использованные вершины перемещаются в список unused
-
-
 
 // Event-driven technique, функции для оповещения о событиях
 
@@ -58,42 +63,28 @@ int SBT_SetCallback_OnRotate(FuncOnRotate func_) {
 	funcOnRotate = func_;
 	return 0;
 }
-
 int SBT_SetCallback_OnWalk(FuncOnWalk func_) {
 	funcOnWalk = func_;
 	return 0;
 }
-
 int SBT_SetCallback_OnFind(FuncOnFind func_) {
 	funcOnFind = func_;
 	return 0;
 }
 
+/*
+  Функции memory management - эти функции ничего не должны знать про _структуру_ дерева,
+  значения left/right и т.п. они используют лишь для выстраивания элементов в список.
+*/
 
-// memory management, эти функции ничего не должны знать о _структуру_ дерева
-// значения .left/.right и т.п. они используют лишь для выстраивания элементов в список
-
-// выделение памяти из кольцевого FIFO-буфера (UNUSED-нодов), иначе - из массива CLEAN-нодов
+// AllocateNode() - выделение памяти из кольцевого FIFO-буфера (UNUSED-нодов), иначе - из массива CLEAN-нодов.
 
 TNodeIndex SBT_AllocateNode() {
 
-	TNodeIndex t = 0; // нет ноды
+	TNodeIndex t = -1; // нет ноды
 
-	// выделить из CLEAN-области (чистые ячейки)
-	if (_tree_unused == -1) {
-		if (_n_clean > 0) {
-			
-			t = SBT_MAX_NODES - _n_clean;
-			_n_clean--;
-		}
-		else {
-			t = -1; // память закончилась
-			return t;
-		}
-	}
-
-	// выделить из UNUSED-области (списка)
-	else {
+	// выделить ноду из UNUSED-области (из кольцевого списка), если они есть
+	if (_tree_unused != -1) {
 		// вершины в списке есть
 		TNodeIndex t = _tree_unused; // берем из начала
 		if (_Tree(t,right) == t) {
@@ -106,40 +97,53 @@ TNodeIndex SBT_AllocateNode() {
 			// теперь first.right - первый элемент, на него ссылается last
 			_Tree(_tree_unused,left) = last;
 			_Tree(last,right) = _tree_unused;
+			// этот приём сработает даже в случае, если в списке останется всего-лишь один элемент
+		}
+	}
+
+	// выделить из CLEAN-области (чистые ячейки), если они остались
+	else {
+		if (_n_clean > 0) {
+			
+			t = SBT_MAX_NODES - _n_clean;
+			_n_clean--;
+		}
+		else {
+			// память закончилась, t = -1
+			return t;
 		}
 	}
 
 	// дополнительная очистка
 	_Tree(t,left) = -1;
 	_Tree(t,right) = -1;
-/*	_Tree(t,parent) = -1; */
 	_Tree(t,size) = 0;
 	_Tree(t,value) = 0;
 	_Tree(t,unused) = 0;
 	// счетчика _n_unused нет (но можно добавить)
-	_n_nodes++;
+	_n_nodes++; // можно увеличивать счетчик занятых нодов вне функции Allocate
 
 	return t; // результат (нода)
 }
 
-// небезопасная функция ! следите за целостностью дерева самостоятельно !
-// подключение в "кольцевой буфер"
-// в плане методики, FreeNode не знает ничего о структуре дерева, она работает с ячейками, управляя только ссылками .left и .right
+// FreeNode - перемещение ноды в "кольцевой буфер"
+// в плане методики, FreeNode не знает ничего о структуре дерева, она работает с ячейками, управляя только ссылками left и right
+// ( небезопасная функция! следите за целостностью дерева самостоятельно! )
 
 int SBT_FreeNode(TNodeIndex t) {
 
-	if (_n_nodes <= 0) return 0; // нечего удалять, >0 нам нужно
-	if (t < 0) return 0;
-	if (_Tree(t,unused) == 1) return 0; // уже удалено
+	if (_n_nodes <= 0) return 0; // нет ни одного занятого нода - нечего удалять
+	if (t < 0) return 0; // некорректный индекс нода
+	if (_Tree(t,unused) == 1) return 0; // нода уже удалена
 
-	// UNUSED пуст, сделать первым элементом в unused-пространстве
+	// UNUSED пуст, сделать первым элементом в UNUSED-пространстве
 	if (_tree_unused == -1) {
 		_Tree(t,left) = t;
 		_Tree(t,right) = t;
 		_tree_unused = t;
 	}
 
-	// UNUSED уже частично или полностью заполнен, добавить в unused-пространство
+	// UNUSED уже частично заполнен, добавить в UNUSED-пространство
 	else {
 		TNodeIndex last = _Tree(_tree_unused,left); // так как существует root-вершина (first), то и last <> -1
 		// ссылки внутри
@@ -148,29 +152,124 @@ int SBT_FreeNode(TNodeIndex t) {
 		// ссылки снаружи
 		_Tree(_tree_unused,left) = t;
 		_Tree(t,right) = _tree_unused;
-		// _tree_unused не изменяется
+		// _tree_unused не изменяется,
+		// поэтому в следующий раз, при Allocate, возьмется вершина _tree_unused,
+		// FIFO-список
 	}
-/*	_Tree(t,parent) = -1; */
 	_Tree(t,size) = 0;
 	_Tree(t,value) = 0;
 	_Tree(t,unused) = 1;
 	// счетчика _n_unused нет
-	_n_nodes--; // условный счетчик (вспомогательный): эти вершины можно пересчитать в WORK-пространстве
+	_n_nodes--; // вспомогательный счетчик: эти вершины можно пересчитать в WORK-пространстве
 
 	return 1;
 }
 
+/*
+ * Размеры для вершин, size
+ */
 
-// Функции Rotate, Maintain & Add, Delete //
+TNodeSize SBT_Left_Left_size(TNodeIndex t) {
+	if (t < 0) return 0;
+	TNodeIndex l = _Tree(t,left);
+	if (l < 0) return 0;
+	TNodeIndex ll = _Tree(l,left);
+	return ((ll < 0) ? 0 : _Tree(ll,size));
+}
 
-// Вращение влево, t - слева, перевешиваем туда (вершины не пропадают, _n_nodes сохраняет значение)
+TNodeSize SBT_Left_Right_size(TNodeIndex t) {
+	if (t < 0) return 0;
+	TNodeIndex l = _Tree(t,left);
+	if (l < 0) return 0;
+	TNodeIndex lr = _Tree(l,right);
+	return ((lr < 0) ? 0 : _Tree(lr,size));
+}
+
+TNodeSize SBT_Right_Right_size(TNodeIndex t) {
+	if (t < 0) return 0;
+	TNodeIndex r = _Tree(t,right);
+	if (r < 0) return 0;
+	TNodeIndex rr = _Tree(r,right);
+	return ((rr < 0) ? 0 : _Tree(rr,size));
+}
+
+TNodeSize SBT_Right_Left_size(TNodeIndex t) {
+	if (t < 0) return 0;
+	TNodeIndex r = _Tree(t,right);
+	if (r < 0) return 0;
+	TNodeIndex rl = _Tree(r,left);
+	return ((rl < 0) ? 0 : _Tree(rl,size));
+}
+
+TNodeSize SBT_Right_size(TNodeIndex t) {
+	if (t < 0) return 0;
+	TNodeIndex r = _Tree(t,right);
+	return ((r < 0) ? 0 : _Tree(r,size));
+}
+
+TNodeSize SBT_Left_size(TNodeIndex t) {
+	if (t < 0) return 0;
+	TNodeIndex l = _Tree(t,left);
+	return ((l < 0) ? 0 : _Tree(l,size));
+}
+
+/*
+ * Размеры для вершин, size (unsafe-версии функций,
+ * без проверки на t < 0)
+ * (для оптимизации по скорости)
+ */
+
+TNodeSize SBT_Left_Left_size_unsafe(TNodeIndex t) {
+	TNodeIndex l = _Tree(t,left);
+	if (l < 0) return 0;
+	TNodeIndex ll = _Tree(l,left);
+	return ((ll < 0) ? 0 : _Tree(ll,size));
+}
+
+TNodeSize SBT_Left_Right_size_unsafe(TNodeIndex t) {
+	TNodeIndex l = _Tree(t,left);
+	if (l < 0) return 0;
+	TNodeIndex lr = _Tree(l,right);
+	return ((lr < 0) ? 0 : _Tree(lr,size));
+}
+
+TNodeSize SBT_Right_Right_size_unsafe(TNodeIndex t) {
+	TNodeIndex r = _Tree(t,right);
+	if (r < 0) return 0;
+	TNodeIndex rr = _Tree(r,right);
+	return ((rr < 0) ? 0 : _Tree(rr,size));
+}
+
+TNodeSize SBT_Right_Left_size_unsafe(TNodeIndex t) {
+	TNodeIndex r = _Tree(t,right);
+	if (r < 0) return 0;
+	TNodeIndex rl = _Tree(r,left);
+	return ((rl < 0) ? 0 : _Tree(rl,size));
+}
+
+TNodeSize SBT_Right_size_unsafe(TNodeIndex t) {
+	TNodeIndex r = _Tree(t,right);
+	return ((r < 0) ? 0 : _Tree(r,size));
+}
+
+TNodeSize SBT_Left_size_unsafe(TNodeIndex t) {
+	TNodeIndex l = _Tree(t,left);
+	return ((l < 0) ? 0 : _Tree(l,size));
+}
+
+/*
+ * Функции работы с деревом,
+ * Rotate, Maintain & Add, Delete
+ */
+
+// LeftRotate, Вращение влево - перемещение вершины t влево, (вершины не пропадают, _n_nodes сохраняет значение)
 
 int SBT_LeftRotate(TNodeIndex t, TNodeIndex parent) {
 
+        // проверять на условие _n_nodes > 0 не обязательно
         if (t < 0) return 0;
         TNodeIndex k = _Tree(t,right);
         if (k < 0) return 0;
-/*        TNodeIndex p = _Tree(t,parent); */
 //	if (funcOnRotate != NULL) funcOnRotate(k, t, "LEFT_ROTATE");
 
         // поворачиваем ребро дерева
@@ -179,28 +278,15 @@ int SBT_LeftRotate(TNodeIndex t, TNodeIndex parent) {
 
         // корректируем size
         _Tree(k,size) = _Tree(t,size);
-        TNodeIndex n_l = _Tree(t,left);
-        TNodeIndex n_r = _Tree(t,right); // для ускорения — выборку из кэша
-        TNodeSize s_l = ((n_l != -1) ? _Tree(n_l,size) : 0);
-        TNodeSize s_r = ((n_r != -1) ? _Tree(n_r,size) : 0);
-        _Tree(t,size) = s_l + s_r + 1;
+        _Tree(t,size) = SBT_Left_size(t) + SBT_Right_size(t) + 1;
 
-/*
-        // меняем трёх предков
-        // 1. t.right.parent = t
-        // 2. k.parent = t.parent
-        // 3. t.parent = k
-        if (_Tree(t,right) != -1) _Tree(_Tree(t,right),parent) = t; // из кэша
-        _Tree(k,parent) = p;
-        _Tree(t,parent) = k;
-*/
         // меняем корень, parent -> t, k
         if (parent == -1) _tree_root = k; // это root
         else {
                 if (_Tree(parent,left) == t) _Tree(parent,left) = k;
                 else _Tree(parent,right) = k; // вторую проверку можно не делать
         }
-        return 1;
+        return 1; // нет отказа
 }
 
 // Вращение вправо, t - справа, перевешиваем туда (вершины не пропадают, _n_nodes сохраняет значение)
@@ -210,7 +296,6 @@ int SBT_RightRotate(TNodeIndex t, TNodeIndex parent) {
 	if (t < 0) return 0;
 	TNodeIndex k = _Tree(t,left);
 	if (k < 0) return 0;
-/*	TNodeIndex p = _Tree(t,parent); */
 //	if (funcOnRotate != NULL) funcOnRotate(k, t, "RIGHT_ROTATE");
 
 	// поворачиваем ребро дерева
@@ -219,90 +304,29 @@ int SBT_RightRotate(TNodeIndex t, TNodeIndex parent) {
 
 	// корректируем size
 	_Tree(k,size) = _Tree(t,size);
-	TNodeIndex n_l = _Tree(t,left);
-	TNodeIndex n_r = _Tree(t,right);
-	TNodeSize s_l = ((n_l != -1) ? _Tree(n_l,size) : 0);
-	TNodeSize s_r = ((n_r != -1) ? _Tree(n_r,size) : 0);
-	_Tree(t,size) = s_l + s_r + 1;
+	_Tree(t,size) = SBT_Left_size(t) + SBT_Right_size(t) + 1;
 
-/*
-	// меняем трёх предков
-	// 1. t.left.parent = t
-	// 2. k.parent = t.parent
-	// 3. t.parent = k
-	if (_Tree(t,left) != -1) _Tree(_Tree(t,left),parent) = t;
-	_Tree(k,parent) = p;
-	_Tree(t,parent) = k;
-*/
 	// меняем корень, parent -> t, k
 	if (parent == -1) _tree_root = k; // это root
 	else {
 		if (_Tree(parent,left) == t) _Tree(parent,left) = k;
 		else _Tree(parent,right) = k; // вторую проверку можно не делать
 	}
-	return 1;
+	return 1; // не отказа
 }
 
-// Размеры для вершин, size
-
-TNodeSize SBT_Left_Left_size(TNodeIndex t) {
-	if (t == -1) return 0;
-	TNodeIndex l = _Tree(t,left);
-	if (l == -1) return 0;
-	TNodeIndex ll = _Tree(l,left);
-	return ((ll == -1) ? 0 : _Tree(ll,size));
-}
-
-TNodeSize SBT_Left_Right_size(TNodeIndex t) {
-	if (t == -1) return 0;
-	TNodeIndex l = _Tree(t,left);
-	if (l == -1) return 0;
-	TNodeIndex lr = _Tree(l,right);
-	return ((lr == -1) ? 0 : _Tree(lr,size));
-}
-
-TNodeSize SBT_Right_Right_size(TNodeIndex t) {
-	if (t == -1) return 0;
-	TNodeIndex r = _Tree(t,right);
-	if (r == -1) return 0;
-	TNodeIndex rr = _Tree(r,right);
-	return ((rr == -1) ? 0 : _Tree(rr,size));
-}
-
-TNodeSize SBT_Right_Left_size(TNodeIndex t) {
-	if (t == -1) return 0;
-	TNodeIndex r = _Tree(t,right);
-	if (r == -1) return 0;
-	TNodeIndex rl = _Tree(r,left);
-	return ((rl == -1) ? 0 : _Tree(rl,size));
-}
-
-TNodeSize SBT_Right_size(TNodeIndex t) {
-	if (t == -1) return 0;
-	TNodeIndex r = _Tree(t,right);
-	return ((r == -1) ? 0 : _Tree(r,size));
-}
-
-TNodeSize SBT_Left_size(TNodeIndex t) {
-	if (t == -1) return 0;
-	TNodeIndex l = _Tree(t,left);
-	return ((l == -1) ? 0 : _Tree(l,size));
-}
-
-
-// Сбалансировать дерево (более быстрый алгоритм)
+// Maintain (Simpler), Сбалансировать дерево (более быстрый алгоритм)
 
 int SBT_Maintain_Simpler(TNodeIndex t, TNodeIndex parent, int flag) {
 // если меняются узлы - надо поменять ссылку на них
 
 	if (t < 0) return 0;
-/*	TNodeIndex parent = _Tree(t,parent); // есть "родитель" */
 	int at_left = 0;
 	if (parent == -1) { // t - корень дерева, он изменяется; запоминать нужно не индекс, а "топологию"
 	}
 	else {
-	    if (_Tree(parent,left) == t) at_left = 1; // "слева" от родителя - индекс родителя не изменился
-	    else at_left = 0; // "справа" от родителя
+	    if (_Tree(parent,left) == t) at_left = 1; // t - "слева" от родителя; индекс родителя не изменился
+	    else at_left = 0; // t - "справа" от родителя
 	}
 
 	// поместили слева, flag == 0
@@ -342,13 +366,13 @@ int SBT_Maintain_Simpler(TNodeIndex t, TNodeIndex parent, int flag) {
 	return 0;
 }
 
-// Сбалансировать дерево ("тупой" алгоритм)
+// Maintain, Сбалансировать дерево ("тупой" алгоритм)
+// возможно, получится написать специализированную версию maintain для DeleteNode
 
 int SBT_Maintain(TNodeIndex t, TNodeIndex parent) {
 
 	if (t < 0) return 0;
 
-/*	TNodeIndex parent = _Tree(t,parent); // есть "родитель" */
 	int at_left = 0;
 	if (parent == -1) { // t - корень дерева, он изменяется; запоминать нужно не индекс, а "топологию"
 	}
@@ -399,14 +423,12 @@ int SBT_Maintain(TNodeIndex t, TNodeIndex parent) {
 	return 0;
 }
 
-// Добавить вершину в поддерево t, без проверки уникальности (куда - t, родительская - parent)
+// AddNode, Добавить вершину в поддерево t, без проверки уникальности (t - куда, parent - родительская)
 
-int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
-	_Tree(t,size)++;
+inline int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 	if (_n_nodes <= 0) {
 		TNodeIndex t_new = SBT_AllocateNode();
 		_Tree(t_new,value) = value;
-/*		_Tree(t_new,parent) = parent; */
 		_Tree(t_new,left) = -1;
 		_Tree(t_new,right) = -1;
 		_Tree(t_new,size) = 1;
@@ -418,8 +440,6 @@ int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 				TNodeIndex t_new = SBT_AllocateNode();
 				_Tree(t,left) = t_new;
 				_Tree(t_new,value) = value;
-				_Tree(t_new,value) = value;
-/*				_Tree(t_new,parent) = t; */
 				_Tree(t_new,left) = -1;
 				_Tree(t_new,right) = -1;
 				_Tree(t_new,size) = 1;
@@ -433,8 +453,6 @@ int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 				TNodeIndex t_new = SBT_AllocateNode();
 				_Tree(t,right) = t_new; // по-умолчанию, добавляем вправо (поэтому "левых" вращений больше)
 				_Tree(t_new,value) = value;
-				_Tree(t_new,value) = value;
-/*				_Tree(t_new,parent) = t; */
 				_Tree(t_new,left) = -1;
 				_Tree(t_new,right) = -1;
 				_Tree(t_new,size) = 1;
@@ -444,6 +462,7 @@ int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 			}
 		}
 	}
+	_Tree(t,size)++;
 	//SBT_Maintain(t, parent);
 	SBT_Maintain_Simpler(t, parent, (value >= _Tree(t,value)) ? 1 : 0);
 	return 0;
@@ -451,19 +470,20 @@ int SBT_AddNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 
 // Добавить вершину без проверки уникальности value
 
-int SBT_AddNode(TNumber value) {
+inline int SBT_AddNode(TNumber value) {
 	return SBT_AddNode_At(value, _tree_root, -1);
 }
 
 // Добавление вершины только если такой же (с таким же значением) в дереве нет
 
-int SBT_AddNodeUniq(TNumber value) {
+inline int SBT_AddNodeUniq(TNumber value) {
 
-	int result = SBT_FindNode(value); // fail, если вершина с таким value уже существует
-	if (result == -1) {
+    TNodeIndex t = SBT_FindNode(value);
+	if (t == -1) {
 		SBT_AddNode(value);
 	}
-	return result;
+	// fail, если вершина с таким value уже существует
+	return t;
 }
 
 // Удалить вершину, в дереве t
@@ -474,346 +494,174 @@ int SBT_AddNodeUniq(TNumber value) {
 // 4. Выполняем балансировку вверх от родителя места, где находилась замена (от parent замены).
 
 // Удалить первую попавшуюся вершину по значению value
+// (функция нерекурсивная)
 
 #define SBT_MAX_DEPTH 256
-static TNodeIndex _a_path_delete[SBT_MAX_DEPTH];
+static TNodeIndex _a_path[SBT_MAX_DEPTH];
 
 int SBT_DeleteNode(TNumber value) {
 
 	if (_n_nodes <= 0) return 0; // ответ: "Не найден"
-	if (_tree_root == -1) return 0;
+	if (_tree_root == -1) return 0; // эта проверка не обязательна
 
-	// FindNode d
-//	printf("[0] FindNode d\n");
-
-	TNodeIndex d = -1;
+	// d = FindNode +++
+	int _path_idx = 0; // свободный элемент
+	TNodeIndex d = _tree_root; // <> -1, от корня
 	TNodeIndex d_p = -1;
-
-	TNodeIndex q_p = -1;
-	TNodeIndex q = _tree_root; // <> -1
-
-	int _path_idx = -1; // на последнем занятом элементе
-	int _path_idx_d = -1;
+	TNumber current = -1;
 	do {
-		_path_idx++;
-		_a_path_delete[_path_idx] = q;
+		_a_path[_path_idx++] = d;
+		current = _Tree(d,value);
 		// переходим к следующему элементу (может оказаться q = -1)
-		if(value > _Tree(q,value)) {
-			q_p = q;
-			q = _Tree(q,right);
-		}
+		if(value > current) { d_p = d; d = _Tree(d,right);}
 		else {
-			if(value < _Tree(q,value)) {
-				q_p = q;
-				q = _Tree(q,left);
-			}
-			else {
-				// остаёмся на найденном элементе
-				d = q;
-				d_p = q_p;
-				break;
-			}
+			if(value < current) { d_p = d; d = _Tree(d,left);}
+			// остаёмся на найденном элементе
+			else { break;}
 		}
-	} while(q != -1);
-	// на выходе d = q (value) или q = -1 (left/right)
-//	printf("d_p = %lld\n", (long long int)d_p);
-//	printf("d = %lld\n", (long long int)d);
-	if (d == -1) return 0; // нечего возвращать
-	// q != -1, d != -1, элемент найден; d остался последним элементом в стековом буфере
-	
-	_path_idx_d = _path_idx; // последний элемент списка
-	_path_idx++; // переходим на свободные элементы
+	} while(d != -1);
+	// на выходе current = value, или d = -1 (left/right)
+	if (d == -1) return 0; // нечего удалять; d != -1, элемент найден
+	int _path_idx_d = _path_idx - 1; // последний элемент списка
 
 	// l = SBT_FindNode_NearestAndLesser_ByIndex(d)
-//	printf("[1] l = SBT_FindNode_NearestAndLesser_ByIndex(d)\n");
-
-	TNodeIndex left = _Tree(d,left);
-//	printf("left = %lld\n", (long long int)left);
-	_a_path_delete[_path_idx] = left;
-	_path_idx++;
-
-	TNodeIndex l = -1; // d.left to right
-	TNodeIndex l_p = -1;
-	if (left != -1) {
-		// left != -1
-		TNodeIndex right = left;
-		TNodeIndex right_parent = d;
-		while (_Tree(right,right) != -1) {
-			right_parent = right;
-			right = _Tree(right,right);
-			if (right != -1) {
-				_a_path_delete[_path_idx] = right;
-				_path_idx++;
-			}
-		}
-		l_p = right_parent;
-		l = right;
-	}
-	// если не найдено (if not found), l = -1; l_p = -1
-	int _path_idx_l = _path_idx;
-	// l = right записан последним в _path_idx_l
-
-	// l == -1, только если у t_d нет дочерних вершин слева (хотя бы одной, <= t_d),
-	// в таком случае - просто удаляем t_d (без перевешивания)
-	
-
-	// l != -1 (Diagram No.1)
-	if (l != -1) {
-		TNodeIndex l_l = _Tree(l,left); // l_r = l.right == -1
-		_a_path_delete[_path_idx] = l_l; // последний элемент
-		_path_idx++; // опять на свободный конец
+	TNodeIndex d_l = _Tree(d,left);
+	if (d_l == -1) {
 		TNodeIndex d_r = _Tree(d,right);
-
-		// меняем правую часть l
-		_Tree(l,right) = d_r;
-/*		if (d_r != -1) _Tree(d_r,parent) = l; */
-		// меняем левую часть l
-		if (l_p == d) { // не надо менять левую часть и l_p
-		}
-		else {
-			TNodeIndex d_l = _Tree(d,left); // d_l != -1
-			// меняем верхнюю часть
-			_Tree(l_p,right) = l_l;
-/*			_Tree(l_l,parent) = l_p; */
-			// меняем левую часть l
-			_Tree(l,left) = d_l;
-/*			_Tree(d_l,parent) = l; */
-		}
-		
-		// меняем ссылку на корень
-		if (d_p == -1){
-			// меняем l <-> root = t_d_p = -1 (1)
-//			printf("_tree_root = l;\n");
-			_tree_root = l;
-/*			_Tree(l,parent) = -1; */
-		}
-		else {
-			// меняем l <-> root = t_d_p != -1
-			if (_Tree(d_p,left) == d) _Tree(d_p,left) = l; // ?
-			else _Tree(d_p,right) = l; // ?
-/*			_Tree(l,parent) = d_p; */
-		}
-
-		// Нужен буфер глубины до SBT_MAX_DEPTH, = 0+
-		int idx = -1;
-
-/*		TNodeIndex q; */
-		if (l_p == d) {
-/*			q = l; */
-			idx = _path_idx_l - 1;
-		}
-		else {
-/*			q = l_p; */
-			idx = _path_idx_l - 2;
-		}
-/*		while(q != -1) { */
-		while(idx >= 0) {
-			TNodeIndex q = _a_path_delete[idx];
-			_Tree(q,size) =  SBT_Left_size(q) + SBT_Right_size(q) + 1;
-/*			q = _Tree(q,parent); */
-			idx--;
-		}
-
-		// балансировка на "обратном отходе"
-
-		if (l_l != -1) {
-/*			q = l_l; */
-			idx = _path_idx_l;
-		}
-		else {
-/*			q = l_p; */
-			idx = _path_idx_l - 2;
-		}
-/*		while(q != -1) { */
-		while(idx >= 0) {
-			TNodeIndex q = _a_path_delete[idx];
-			TNodeIndex q_p = (idx > 0) ? _a_path_delete[idx-1] : -1;
-			SBT_Maintain(q, q_p);
-/*			q = _Tree(q,parent); */
-			idx--;
-		}
-
-		SBT_FreeNode(d);
-
-	}
-
-	else {
-
-		// найти r = SBT_FindNode_NearestAndGreater_ByIndex(d)
-/*		TNodeIndex r = SBT_FindNode_NearestAndGreater_ByIndex(d); // d.right -> left */
-//		printf("[2] r = SBT_FindNode_NearestAndGreater_ByIndex(d)\n");
-
-		_path_idx = _path_idx_d; // последний элемент списка
-		_path_idx++; // переходим на свободные элементы
-
-		// d != -1
-		TNodeIndex right = _Tree(d,right);
-//		printf("right = %lld\n", (long long int)right);
-
-		_a_path_delete[_path_idx] = right;
-		_path_idx++;
-//		printf("[2.1]\n");
-
-
-		TNodeIndex r = -1; // d.left to right
-		TNodeIndex r_p = -1;
-		if (right != -1) {
-			TNodeIndex left_parent = d;
-			TNodeIndex left = right;
-			while (_Tree(left,left) != -1) {
-				left_parent = left;
-				left = _Tree(left,left);
-				if (left != -1) {
-					_a_path_delete[_path_idx] = left;
-					_path_idx++;
-				}
-			}
-			r_p = left_parent; // if parent != t[value]
-			r = left;
-		}
-		int _path_idx_r = _path_idx;
-
-//		printf("[2.2]\n");
-
-		// (Diagram No.3)
-		if (r == -1) {
-
-//			printf("[3] (r == -1)\n");
-
-			// вершина d является листом
+		// вершина d является листом
+		if (d_r == -1) {
 			// меняем ссылку на корень
 			if (d_p == -1) {
-//				printf("_tree_root = -1;\n");
 				_tree_root = -1;
 			}
 			else {
 				if (_Tree(d_p,left) == d) _Tree(d_p,left) = -1;
 				else _Tree(d_p,right) = -1;
-			}
 
-//			printf("[3.1]\n");
-			// можно не делать: _Tree(d,parent) = -1;
-			// больше ничего делать не надо
-			int idx = -1;
-/*			TNodeIndex q = d_p; */
-			idx = _path_idx_d - 1;
-/*			while(q != -1) { */
-			while(idx >= 0) {
-				TNodeIndex q = _a_path_delete[idx];
-				_Tree(q,size) =  SBT_Left_size(q) + SBT_Right_size(q) + 1;
-				idx--;
-/*				q = _Tree(q,parent); */
+				int idx = 0;
+				idx = _path_idx_d - 1;
+				while(idx >= 0) {
+					TNodeIndex q = _a_path[idx]; // не должно = -1
+					_Tree(q,size) =  SBT_Left_size(q) + SBT_Right_size(q) + 1;
+					idx--;
+				}
+				idx = _path_idx_d - 1;
+				while(idx >= 0) {
+					TNodeIndex q = _a_path[idx];
+					TNodeIndex q_p = (idx > 0) ? _a_path[idx-1] : -1;
+					SBT_Maintain(q, q_p);
+					idx--;
+				}
 			}
-
-//			printf("[3.2]\n");
-/*			q = d_p; */
-//printf("idx = %d\n", idx);
-			idx = _path_idx_d - 1;
-/*			while(q != -1) { */
-			while(idx >= 0) {
-				TNodeIndex q = _a_path_delete[idx];
-				TNodeIndex q_p = (idx > 0) ? _a_path_delete[idx-1] : -1;
-				SBT_Maintain(q, q_p);
-				idx--;
-/*				q = _Tree(q,parent); */
-			}
-
-//			printf("[3.3]\n");
 			SBT_FreeNode(d);
-
 		}
-		// r != -1 (Diagram No.2)
+		// справа есть
 		else {
-//			printf("[4] (r != -1)\n");
-
-			// меняем справа
-/*			TNodeIndex r_p = _Tree(r,parent); */
-			TNodeIndex r_r = _Tree(r,right); // r_l = r.left == -1
-			_a_path_delete[_path_idx] = r_r; // последний элемент
-			_path_idx++; // опять на свободный конец
-			TNodeIndex d_l = _Tree(d,left); // == -1 всегда?
-
-			// меняем левую часть r <-> d_l
+			_a_path[_path_idx++] = d_r;
+			TNodeIndex r = d_r;
+			TNodeIndex r_p = d;
+			while (_Tree(r,left) != -1) {
+				r_p = r;
+				r = _Tree(r,left);
+				_a_path[_path_idx++] = r;
+			}
+			int _path_idx_r = _path_idx - 1;
+			// меняем левую часть (r => d)
+			TNodeIndex r_r = _Tree(r,right);
 			_Tree(r,left) = d_l;
-/*			if (d_l != -1) _Tree(d_l,parent) = r;*/
-
-			if (r_p == d) { // правую часть менять не надо, r_r
+			if (r == d_r) { // правую часть менять не надо, r_r
 			}
 			else {
-				TNodeIndex d_r = _Tree(d,right); // != -1 всегда?
-				// меняем верхнюю часть
-				_Tree(r_p,left) = r_r;
-/*				_Tree(r_r,parent) = r_p; */
-				// меняем правую часть r <-> d_r
-				_Tree(r,right) = d_r;
-/*				_Tree(d_r,parent) = r; */
+				_Tree(r_p,left) = r_r; // меняем верхнюю часть, r_r => r
+				_Tree(r,right) = d_r; // меняем правую часть r => d
 			}
 			
-			// меняем ссылку на корень
-			if (d_p == -1){
-				// меняем l <-> root = t_d_p = -1 (1)
-//				printf("_tree_root = r;\n");
+			// меняем ссылку на корень: d на r
+			if (d_p == -1) {
 				_tree_root = r;
-/*				_Tree(r,parent) = -1; */
 			}
 			else {
-				// меняем l <-> root = t_d_p != -1
 				if(_Tree(d_p,right) == d) _Tree(d_p,right) = r;
 				else _Tree(d_p,left) = r;
-/*				_Tree(r,parent) = d_p; */
 			}
-
-			int idx = -1;
-/*			TNodeIndex q; */
-			if (r_p == d) {
-/*				q = r; */
-				idx = _path_idx_r - 1;
-			}
-			else {
-/*				q = r_p; */
-				idx = _path_idx_r - 2;
-			}
-/*			while(q != -1) { */
+			// простановка Sizes
+			int idx = _path_idx_r - 1; // начиная с r_p
 			while(idx >= 0) {
-				TNodeIndex q = _a_path_delete[idx];
+				TNodeIndex q = _a_path[idx];
+				if (q == d) q = r;
 				_Tree(q,size) =  SBT_Left_size(q) + SBT_Right_size(q) + 1;
-/*				q = _Tree(q,parent); */
 				idx--;
 			}
-
-
-			if (r_r != -1) {
-				q = r_r;
-				idx = _path_idx_r;
-			}
-			else {
-				q = r_p;
-				idx = _path_idx_r - 2;
-			}
-/*			while(q != -1) { */
+			// балансировка вверх, до корня
+			idx = _path_idx_r - 1; // начиная с r_p
 			while(idx >= 0) {
-				TNodeIndex q = _a_path_delete[idx];
-				TNodeIndex q_p = (idx > 0) ? _a_path_delete[idx-1] : -1;
+				TNodeIndex q = _a_path[idx];
+				TNodeIndex q_p = (idx > 0) ? _a_path[idx-1] : -1;
+				if (q == d) q = r;
 				SBT_Maintain(q, q_p);
-/*				q = _Tree(q,parent); */
 				idx--;
 			}
-
 			SBT_FreeNode(d);
-
 		}
 	}
-
+	// слева есть
+	else {
+		TNodeIndex d_r = _Tree(d,right);
+		_a_path[_path_idx++] = d_l;
+		TNodeIndex l = d_l;
+		TNodeIndex l_p = d;
+		while (_Tree(l,right) != -1) {
+			l_p = l;
+			l = _Tree(l,right);
+			_a_path[_path_idx++] = l;
+		}
+		int _path_idx_l = _path_idx - 1;
+		// меняем правую часть (l => d)
+		TNodeIndex l_l = _Tree(l,left);
+		_Tree(l,right) = d_r;
+		if (l == d_l) { // левую часть менять не надо, l_l
+		}
+		else {
+			_Tree(l_p,right) = l_l; // меняем верхнюю часть, l_l => l
+			_Tree(l,left) = d_l; // меняем левую часть l => d
+		}
+		
+		// меняем ссылку на корень: d на l
+		if (d_p == -1){
+			_tree_root = l;
+		}
+		else {
+			if (_Tree(d_p,left) == d) _Tree(d_p,left) = l;
+			else _Tree(d_p,right) = l;
+		}
+		// простановка Sizes
+		int idx = _path_idx_l - 1; // начиная с l_p
+		while(idx >= 0) {
+			TNodeIndex q = _a_path[idx];
+			if (q == d) q = l;
+			_Tree(q,size) =  SBT_Left_size(q) + SBT_Right_size(q) + 1;
+			idx--;
+		}
+		// балансировка на "обратном отходе"
+		idx = _path_idx_l - 1; // начиная с l_p
+		while(idx >= 0) {
+			TNodeIndex q = _a_path[idx];
+			TNodeIndex q_p = (idx > 0) ? _a_path[idx-1] : -1;
+			if (q == d) q = l;
+			SBT_Maintain(q, q_p);
+			idx--;
+		}
+		SBT_FreeNode(d);
+	}
 	return d;
 }
 
 // Удалить все вершины с данным значением (value)
 
 int SBT_DeleteAllNodes(TNumber value) {
-	int result = -1;
-//	while ((result = SBT_DeleteNode_At(value, _tree_root, -1)) != -1);
-	while ((result = SBT_DeleteNode(value)) != -1);
-	return result;
+	TNodeIndex t = -1;
+	while ((t = SBT_DeleteNode(value)) != -1);
+	return t;
 }
 
 // Напечатать вершины в поддереве t
@@ -827,16 +675,13 @@ void SBT_PrintAllNodes_At(int depth, TNodeIndex t) {
 	// сверху - большие вершины
 	if (_Tree(t,right) >= 0) SBT_PrintAllNodes_At(depth + 1, _Tree(t,right));
 
-/*	if (!((_Tree(t,parent) == -1) && (_Tree(t,left) == -1) && (_Tree(t,right) == -1)) || (t == _tree_root)) { */
-//	if (!((_Tree(t,left) == -1) && (_Tree(t,right) == -1)) || (t == _tree_root)) {
-		for (int i = 0; i < depth; i++) printf(" "); // отступ
-		printf("+%d, id = %lld, value = %lld, size = %lld\n",
-			depth,
-			(long long int)t,
-			(long long int)_Tree(t,value),
-			(long long int)_Tree(t,size)
-		); // иначе: напечатать "тело" узла
-//	}
+	for (int i = 0; i < depth; i++) printf(" "); // отступ
+	printf("+%d, id = %lld, value = %lld, size = %lld\n",
+		depth,
+		(long long int)t,
+		(long long int)_Tree(t,value),
+		(long long int)_Tree(t,size)
+	); // иначе: напечатать "тело" узла
 
 	// снизу - меньшие
 	if (_Tree(t,left) >= 0) SBT_PrintAllNodes_At(depth + 1, _Tree(t,left));
@@ -1038,14 +883,12 @@ void SBT_CheckAllNodes() {
 
 void SBT_DumpAllNodes() {
 	for (uint64_t i = 0; i < SBT_MAX_NODES - _n_clean; i++) {
-/*		printf("idx = %lld, value = %lld [unused = %d], left = %lld, right = %lld, parent = %lld, size = %lld\n", */
 		printf("idx = %lld, value = %lld [unused = %d], left = %lld, right = %lld, size = %lld\n",
 			(long long int)i,
 			(long long int)_Tree(i,value),
 			(int)_Tree(i,unused),
 			(long long int)_Tree(i,left),
 			(long long int)_Tree(i,right),
-/*			(long long int)_Tree(i,parent), */
 			(long long int)_Tree(i,size)
 		);
 	}
@@ -1141,4 +984,3 @@ TNodeIndex SBT_FindNextUsedNode(TNodeIndex s) {
 TNumber GetValueByIndex(TNodeIndex t) {
 	return (t != 1) ? _Tree(t,value) : INT64_MAX;
 }
-

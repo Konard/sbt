@@ -598,6 +598,7 @@ int SBT_DeleteNode(TNumber value) {
 				TNodeIndex q = _a_path[idx];
 				TNodeIndex q_p = (idx > 0) ? _a_path[idx-1] : -1;
 				if (q == d) q = r;
+				if (q_p == d) q_p = r;
 				SBT_Maintain(q, q_p);
 				idx--;
 			}
@@ -648,6 +649,7 @@ int SBT_DeleteNode(TNumber value) {
 			TNodeIndex q = _a_path[idx];
 			TNodeIndex q_p = (idx > 0) ? _a_path[idx-1] : -1;
 			if (q == d) q = l;
+			if (q_p == d) q_p = l;
 			SBT_Maintain(q, q_p);
 			idx--;
 		}

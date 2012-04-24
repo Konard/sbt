@@ -1,18 +1,18 @@
-#include <stdio.h> // printf
-#define __USE_XOPEN_EXTENDED
-#include <stdlib.h> // random
-#include <time.h> // time
+// пятый пример
+// 1) добавить N x 3 элементов
+// 2) найти определенный элемент по его значению, через FindNode()
 
+#include <stdio.h> // printf
 #include "sbt.h"
 
 int main() {
 
-	// пятый пример
-	for (int i = 0; i < 10; i++)
+#define N 10
+	for (int i = 0; i < N; i++)
 	    SBT_AddNodeUniq(i*2);
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < N; i++)
 	    SBT_AddNodeUniq(i*2 + 1);
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < N; i++)
 	    SBT_AddNodeUniq(i*2 + 1); // fail
 
 	SBT_CheckAllNodes();
@@ -20,16 +20,6 @@ int main() {
 	
 	TNumber idx = SBT_FindNode(2); // = обычный Find для уникального ключа (number)
 	printf("idx(2) = %lld\n", (long long int)idx);
-	
-	for (int i = 0; i < 100; i++) {
-		SBT_DeleteNode(i);
-		SBT_CheckAllNodes();
-	}
-	    SBT_DeleteNode(0);
-
-	SBT_CheckAllNodes();
-//	SBT_PrintAllNodes();
-	SBT_DumpAllNodes();
 
 	return 0;
 }

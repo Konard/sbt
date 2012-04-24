@@ -1,13 +1,10 @@
-#include <stdio.h> // printf
-#define __USE_XOPEN_EXTENDED
-#include <stdlib.h> // random
-#include <time.h> // time
+// шестой пример
+// проверка удаления вершин
 
+#include <stdio.h> // printf
 #include "sbt.h"
 
 int main() {
-
-	// шестой пример
 	TNumber idx = SBT_FindNode(2); // = обычный Find для уникального ключа (number)
 	printf("idx(2) = %lld\n", (long long int)idx);
 

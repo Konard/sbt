@@ -1,8 +1,8 @@
-#include <stdio.h> // printf
-#define __USE_XOPEN_EXTENDED
-#include <stdlib.h> // random
-#include <time.h> // time
+// четвертый пример
+// 1) добавить N вершин с псевдослучаным значением, выводя сообщения о событиях "Rotate"
+// 2* распечатать результат
 
+#include <stdio.h> // printf
 #include "sbt.h"
 
 int onRotate(TNodeIndex nodeIndex1, TNodeIndex nodeIndex2, const char *stringAction) {
@@ -15,16 +15,7 @@ int onRotate(TNodeIndex nodeIndex1, TNodeIndex nodeIndex2, const char *stringAct
 }
 
 int main() {
-
 	SBT_SetCallback_OnRotate(onRotate);
-
-	// четвертый пример
-	// добавить 5 вершин
-//	SBT_AddNode(15);
-//	SBT_AddNode(25);
-//	SBT_AddNode(20);
-//	SBT_AddNode(22);
-//	SBT_AddNode(19);
 
 	// генерация псевдослучайных чисел
 #define RND_SEED 100
@@ -36,14 +27,15 @@ int main() {
 		rnd ^= (rnd << RND_A);
 		rnd ^= (rnd >> RND_B);
 		rnd ^= (rnd << RND_C);
-		//SBT_AddNodeUniq((rnd)&0x000000FF); // вставка с отказами
-		SBT_AddNode((rnd)&0x000000FF); // вставка без отказов
+		//SBT_AddNodeUniq((rnd)&0x00FFFFFF); // вставка с отказами
+		SBT_AddNode((rnd)&0x00FFFFFF); // вставка без отказов
 	}
 
 	// результат работы
-//	SBT_CheckAllNodes();
-//	SBT_PrintAllNodes();
-//	SBT_DumpAllNodes();
-
+/*	// можно раскомментировать этот блок, чтобы проверить и посмотреть результат выполнения AddNode's
+	SBT_CheckAllNodes();
+	SBT_PrintAllNodes();
+	SBT_DumpAllNodes();
+*/
 	return 0;
 }

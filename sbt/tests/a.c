@@ -1,14 +1,9 @@
-#include <stdio.h> // printf
-#define __USE_XOPEN_EXTENDED
-#include <stdlib.h> // random
-#include <time.h> // time
+// десятый пример
+// проверка на добавление и удаление
 
 #include "sbt.h"
 
 int main() {
-
-
-	// десятый пример
 
 	SBT_AddNode(6);
 	SBT_AddNode(4);

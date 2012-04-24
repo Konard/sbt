@@ -1,13 +1,10 @@
-#include <stdio.h> // printf
-#define __USE_XOPEN_EXTENDED
-#include <stdlib.h> // random
-#include <time.h> // time
+// восьмой пример
+// тестирование составляющей компоненты для DeleteNode, называется - FindNode_Nearest*
 
+#include <stdio.h> // printf
 #include "sbt.h"
 
 int main() {
-
-	// восьмой пример
 	// добавить 6 вершин (они будут передвигаться налево,
 	// так как подвешиваются справа - идут по-возрастанию)
 	SBT_AddNode(1);
@@ -40,16 +37,6 @@ int main() {
 	SBT_CheckAllNodes();
 	SBT_PrintAllNodes();
 	SBT_DumpAllNodes();
-
-/*
-	SBT_DeleteNode(2);
-
-	// распечатать результат
-	SBT_CheckAllNodes();
-	SBT_PrintAllNodes();
-	SBT_DumpAllNodes();
-*/
-
 
 	return 0;
 }

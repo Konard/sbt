@@ -1,25 +1,24 @@
-#include <stdio.h> // printf
-#define __USE_XOPEN_EXTENDED
-#include <stdlib.h> // random
-#include <time.h> // time
+// седьмой пример
+// добавление большого количества нод в дерево, и последующее их удаление
+// 1) добавить 10 млн. нод
+// 2) удалить 10 млн. нод
 
 #include "sbt.h"
 
-int main() {
+#include <stdio.h> // printf
+#include <stdlib.h> // atoi
 
-#define N (10*1000*1000)
-//#define N 100000
-//#define N 100
-	// седьмой пример
+int main(int argc, char **argv) {
+
+	if (argc < 2) return 0;
+	int N = atoi(argv[1]);
+
 	printf("добавление ...\n");
 	for (int i = 0; i < N; i++) {
 		SBT_AddNode(i);
 //		SBT_AddNodeUniq(i);
 //		SBT_CheckAllNodesSize();
 	}
-//	SBT_DeleteNode(10);
-//	SBT_PrintAllNodes();
-//	return 0;
 
 	printf("удаление ...\n");
 	for (int i = 0; i < N; i++) {
@@ -27,20 +26,8 @@ int main() {
 //		SBT_CheckAllNodesBalance();
 	}
 
-//	printf("перед удалением %d\n", i);
-//	SBT_DumpAllNodes();
+//	SBT_CheckAllNodes();
 //	SBT_PrintAllNodes();
-//		printf("после удаления %d\n", i);
-//	SBT_DumpAllNodes();
-//	SBT_PrintAllNodes();
-//		SBT_CheckAllNodesSize();
-
-	SBT_CheckAllNodesSize();
-	SBT_CheckAllNodesBalance();
-
-//	    SBT_DeleteAllNodes(i);
-	SBT_PrintAllNodes();
-//	SBT_DumpAllNodes();
 
 	return 0;
 }

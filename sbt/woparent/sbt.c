@@ -20,7 +20,6 @@ TNumber _a_value[SBT_MAX_NODES]; // значение, привязанное к 
 TNodeIndex _a_left[SBT_MAX_NODES];  // ссылка на левое поддерево, = -1, если нет дочерних вершин
 TNodeIndex _a_right[SBT_MAX_NODES]; // ссылка на правое поддерево
 TNodeSize _a_size[SBT_MAX_NODES]; // size в понимании SBT
-int _a_unused[SBT_MAX_NODES]; // «удалённая»; это поле можно использовать и для других флагов
 #else
 
   // одним массивом
@@ -35,7 +34,6 @@ typedef struct TNode {
 	TNodeIndex left;  // ссылка на левое поддерево, = -1, если нет дочерних вершин
 	TNodeIndex right; // ссылка на правое поддерево
 	TNodeSize size; // size в понимании SBT
-	int unused; // «удалённая»; это поле можно использовать и для других флагов
 } TNode;
 */
 
@@ -119,7 +117,6 @@ TNodeIndex SBT_AllocateNode() {
 	_Tree(t,right) = -1;
 	_Tree(t,size) = 0;
 	_Tree(t,value) = 0;
-	_Tree(t,unused) = 0;
 	// счетчика _n_unused нет (но можно добавить)
 	_n_nodes++; // можно увеличивать счетчик занятых нодов вне функции Allocate
 
@@ -134,7 +131,6 @@ int SBT_FreeNode(TNodeIndex t) {
 
 	if (_n_nodes <= 0) return 0; // нет ни одного занятого нода - нечего удалять
 	if (t < 0) return 0; // некорректный индекс нода
-	if (_Tree(t,unused) == 1) return 0; // нода уже удалена
 
 	// UNUSED пуст, сделать первым элементом в UNUSED-пространстве
 	if (_tree_unused == -1) {
@@ -158,7 +154,6 @@ int SBT_FreeNode(TNodeIndex t) {
 	}
 	_Tree(t,size) = 0;
 	_Tree(t,value) = 0;
-	_Tree(t,unused) = 1;
 	// счетчика _n_unused нет
 	_n_nodes--; // вспомогательный счетчик: эти вершины можно пересчитать в WORK-пространстве
 
@@ -885,10 +880,9 @@ void SBT_CheckAllNodes() {
 
 void SBT_DumpAllNodes() {
 	for (uint64_t i = 0; i < SBT_MAX_NODES - _n_clean; i++) {
-		printf("idx = %lld, value = %lld [unused = %d], left = %lld, right = %lld, size = %lld\n",
+		printf("idx = %lld, value = %lld, left = %lld, right = %lld, size = %lld\n",
 			(long long int)i,
 			(long long int)_Tree(i,value),
-			(int)_Tree(i,unused),
 			(long long int)_Tree(i,left),
 			(long long int)_Tree(i,right),
 			(long long int)_Tree(i,size)
@@ -962,23 +956,6 @@ TNodeIndex SBT_FindNode_NearestAndLesser_ByValue(TNumber value) {
 
 TNodeIndex SBT_FindNode_NearestAndGreater_ByValue(TNumber value) {
 	return SBT_FindNode_NearestAndGreater_ByIndex(SBT_FindNode(value));
-}
-
-TNodeIndex SBT_FindNextUsedNode(TNodeIndex s) {
-	int f = 0;
-	long long int t = 0;
-	// ищем от указанной позиции
-	for(t = s; t < SBT_MAX_NODES - _n_clean; t++)
-	if (_Tree(t,unused) == 0) { f = 1; break; }
-
-	// если ещё не найдена использующаяся ячейка:
-	if (!f) {
-		// ищем от начала
-		for(t = 0; t < s; t++)
-			if (_Tree(t,unused) == 0) { f = 1; break; }
-	}
-	if (f) return t;
-	else return -1;
 }
 
 // INT64_MAX, если не можем найти элемент по индексу

@@ -3,15 +3,7 @@
 
 #include <stdio.h> // printf
 
-#ifdef __LINUX__
-#include <pthread.h> // pthread_mutex_*
-// узкое место при доступе из многих потоков - глобальная блокировка таблицы _nodes
-pthread_mutex_t _lock_nodes = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 // переменные модуля
-
-//#define SBT_DONT_MAINTAIN 1
 
 #ifdef SBT_ARRAYS
 TNumber _a_value[SBT_MAX_NODES]; // значение, привязанное к ноде
@@ -396,7 +388,6 @@ int SBT_DeleteNode_At(TNumber value, TNodeIndex t, TNodeIndex parent) {
 	
 
 	// l != -1 (Diagram No.1)
-//	if ((l != -1) && (SBT_Left_size(d) >= SBT_Right_size(d))) {
 	if (l != -1) {
 		TNodeIndex l_p = _Tree(l,parent);
 		TNodeIndex l_l = _Tree(l,left); // l_r = l.right == -1

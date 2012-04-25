@@ -1,10 +1,9 @@
-Процедура 7.c:
-1) добавление 10 млн. элементов
-2) удаление 10 млн. элементов
+Процедура 7.c: добавление + удаление 10 млн. элементов
 
-w/o parent, solid: 22 сек,
-w/o parent, arrays: 29 сек,
-with, solid: 25 сек,
-with, arrays: 36 сек.
+1) с использованием parent-связи
+   with, solid: 37 сек,
+   with, arrays: 36 сек.
 
-*) w/o parent - без использования parent-связи (+без рекурсии в DeleteNode)
+2) w/o parent - без использования parent-связи (+без рекурсии в DeleteNode)
+   w/o parent, solid: 22 сек,
+   w/o parent, arrays: 32 сек,

@@ -13,7 +13,6 @@ typedef uint64_t TNodeSize;
 
 typedef struct TNode {
 	TNumber value; // значение, привязанное к ноде
-/*	TNodeIndex parent; // ссылка на уровень выше (избавляемся) */
 	TNodeIndex left;  // ссылка на левое поддерево, = -1, если нет дочерних вершин
 	TNodeIndex right; // ссылка на правое поддерево
 	TNodeSize size; // size в понимании SBT

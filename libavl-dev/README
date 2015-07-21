@@ -20,7 +20,7 @@ $ dpkg -L libavl-dev
 /usr/share/doc/libavl-dev/changelog.Debian.gz
 /usr/lib/libavl.so
 
-# 10 million records, "123"-strings
+# 10 million records, 4-byte ASCIIZ-strings
 $ time ./test
 
 real	0m1.266s

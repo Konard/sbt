@@ -1,4 +1,5 @@
 #include <stdio.h>  // printf,fgets
+#define __USE_XOPEN_EXTENDED
 #include <string.h> // strdup
 #include <stdlib.h> // free
 #include <avl.h>

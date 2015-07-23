@@ -70,7 +70,7 @@ TNodeIndex SBT_FindNextUsedNode(TNodeIndex s);
 TNodeIndex GetRootIndex();
 TValue GetValueByIndex(TNodeIndex t);
 
-void Initialise();
-void Deinitialise();
+void SBT_Initialise();
+void SBT_Deinitialise();
 
 #endif

@@ -5,7 +5,7 @@
 
 // Массив, его размер
 
-const uint64_t NNSTART = 10000;
+const uint64_t NNSTART = 10000000;
 const uint64_t NNPLUS = 2000;
 const uint8_t NNPROC = 20; // увеличение массива на 20%
 
@@ -25,7 +25,7 @@ TNodeIndex ROOT = -1; // дерево
 TNodeIndex FREE = -1; // список неиспользованных
 TNodeIndex NCLEAN; // количество "чистых"; только уменьшается
 
-void Initialise() {
+void SBT_Initialise() {
 	NN = NNSTART;
 	TNodeIndex t;
 
@@ -50,7 +50,7 @@ void Initialise() {
 	NCLEAN = NN; // количество "чистых"; только уменьшается
 }
 
-void Deinitialise() {
+void SBT_Deinitialise() {
 	free(aValue);
 	free(aU);
 	free(aL);
@@ -90,22 +90,20 @@ int8_t SBT_SetCallback_OnFind(FuncOnFind func_) {
 int8_t SBT_LeftRotate(TNodeIndex t) {
 
         if (t < 0) return 0;
-        TNodeIndex k = aR[t];
+        register TNodeIndex k = aR[t];
         if (k < 0) return 0;
-        TNodeIndex p = aU[t];
-/*
-	if (funcOnRotate != NULL) funcOnRotate(k, t, "LEFT_ROTATE");
-*/
+        register TNodeIndex p = aU[t];
+
         // поворачиваем ребро дерева
         aR[t] = aL[k];
         aL[k] = t;
 
         // корректируем size
         aSize[k] = aSize[t];
-        TNodeIndex n_l = aL[t];
-        TNodeIndex n_r = aR[t]; // ? для ускорения — выборку из кэша
-        TNodeSize s_l = ((n_l != -1) ? aSize[n_l] : 0);
-        TNodeSize s_r = ((n_r != -1) ? aSize[n_r] : 0);
+        register TNodeIndex n_l = aL[t];
+        register TNodeIndex n_r = aR[t]; // ? для ускорения — выборку из кэша
+        register TNodeSize s_l = ((n_l != -1) ? aSize[n_l] : 0);
+        register TNodeSize s_r = ((n_r != -1) ? aSize[n_r] : 0);
         aSize[t] = s_l + s_r + 1;
 
         // меняем трёх предков
@@ -130,22 +128,20 @@ int8_t SBT_LeftRotate(TNodeIndex t) {
 int8_t SBT_RightRotate(TNodeIndex t) {
 
 	if (t < 0) return 0;
-	TNodeIndex k = aL[t];
+	register TNodeIndex k = aL[t];
 	if (k < 0) return 0;
-	TNodeIndex p = aU[t];
-/*
-	if (funcOnRotate != NULL) funcOnRotate(k, t, "RIGHT_ROTATE");
-*/
+	register TNodeIndex p = aU[t];
+
 	// поворачиваем ребро дерева
 	aL[t] = aR[k];
 	aR[k] = t;
 
 	// корректируем size
 	aSize[k] = aSize[t];
-	TNodeIndex n_l = aL[t];
-	TNodeIndex n_r = aR[t];
-	TNodeSize s_l = ((n_l != -1) ? aSize[n_l] : 0);
-	TNodeSize s_r = ((n_r != -1) ? aSize[n_r] : 0);
+	register TNodeIndex n_l = aL[t];
+	register TNodeIndex n_r = aR[t];
+	register TNodeSize s_l = ((n_l != -1) ? aSize[n_l] : 0);
+	register TNodeSize s_r = ((n_r != -1) ? aSize[n_r] : 0);
 	aSize[t] = s_l + s_r + 1;
 
 	// меняем трёх предков
@@ -169,46 +165,46 @@ int8_t SBT_RightRotate(TNodeIndex t) {
 
 TNodeSize SBT_Left_Left_size(TNodeIndex t) {
 	if (t == -1) return 0;
-	TNodeIndex l = aL[t];
+	register TNodeIndex l = aL[t];
 	if (l == -1) return 0;
-	TNodeIndex ll = aL[l];
+	register TNodeIndex ll = aL[l];
 	return ((ll == -1) ? 0 : aSize[ll]);
 }
 
 TNodeSize SBT_Left_Right_size(TNodeIndex t) {
 	if (t == -1) return 0;
-	TNodeIndex l = aL[t];
+	register TNodeIndex l = aL[t];
 	if (l == -1) return 0;
-	TNodeIndex lr = aR[l];
+	register TNodeIndex lr = aR[l];
 	return ((lr == -1) ? 0 : aSize[lr]);
 }
 
 TNodeSize SBT_Right_Right_size(TNodeIndex t) {
 	if (t == -1) return 0;
-	TNodeIndex r = aR[t];
+	register TNodeIndex r = aR[t];
 	if (r == -1) return 0;
-	TNodeIndex rr = aR[r];
+	register TNodeIndex rr = aR[r];
 	return ((rr == -1) ? 0 : aSize[rr]);
 }
 
 TNodeSize SBT_Right_Left_size(TNodeIndex t) {
 	if (t == -1) return 0;
-	TNodeIndex r = aR[t];
+	register TNodeIndex r = aR[t];
 	if (r == -1) return 0;
-	TNodeIndex rl = aL[r];
+	register TNodeIndex rl = aL[r];
 	return ((rl == -1) ? 0 : aSize[rl]);
 }
 
 TNodeSize SBT_Right_size(TNodeIndex t) {
 	if (t == -1) return 0;
-	TNodeIndex r = aR[t];
-	return ((r == -1) ? 0 : aR[r]);
+	register TNodeIndex r = aR[t];
+	return ((r == -1) ? 0 : aSize[r]);
 }
 
 TNodeSize SBT_Left_size(TNodeIndex t) {
 	if (t == -1) return 0;
-	TNodeIndex l = aL[t];
-	return ((l == -1) ? 0 : aL[l]);
+	register TNodeIndex l = aL[t];
+	return ((l == -1) ? 0 : aSize[l]);
 }
 
 // Сбалансировать дерево (более быстрый алгоритм)
@@ -324,7 +320,7 @@ int8_t SBT_Maintain(TNodeIndex t) {
 int8_t SBT_AddNode_At(TValue value, TNodeIndex t, TNodeIndex parent) {
 	if (ROOT != -1) aSize[t]++;
 	if (NU <= 0) {
-		TNodeIndex t_new = SBT_AllocateNode();
+		register TNodeIndex t_new = SBT_AllocateNode();
 		if (t_new == -1) return 0;
 		aValue[t_new] = value;
 		aU[t_new] = parent;
@@ -332,11 +328,12 @@ int8_t SBT_AddNode_At(TValue value, TNodeIndex t, TNodeIndex parent) {
 		aR[t_new] = -1;
 		aSize[t_new] = 1;
 		ROOT = 0;
+		return 1;
 	}
 	else {
 		if(value < aValue[t]) {
 			if(aL[t] == -1) {
-				TNodeIndex t_new = SBT_AllocateNode();
+				register TNodeIndex t_new = SBT_AllocateNode();
 				if (t_new == -1) return 0;
 				aL[t] = t_new;
 				aValue[t_new] = value;
@@ -351,7 +348,7 @@ int8_t SBT_AddNode_At(TValue value, TNodeIndex t, TNodeIndex parent) {
 		}
 		else {
 			if(aR[t] == -1) {
-				TNodeIndex t_new = SBT_AllocateNode();
+				register TNodeIndex t_new = SBT_AllocateNode();
 				if (t_new == -1) return 0;
 				aR[t] = t_new; // по-умолчанию, добавляем вправо (поэтому "левых" вращений больше)
 				aValue[t_new] = value;
@@ -366,10 +363,8 @@ int8_t SBT_AddNode_At(TValue value, TNodeIndex t, TNodeIndex parent) {
 		}
 	}
 	//SBT_Maintain(t);
-#ifndef SBT_DONT_MAINTAIN
-	//SBT_Maintain_Simpler(t, (value >= aValue[t]) ? 1 : 0);
-#endif
-	return 0;
+	SBT_Maintain_Simpler(t, (value >= aValue[t]) ? 1 : 0);
+	return 1;
 }
 
 // Добавить вершину без проверки уникальности value
@@ -583,6 +578,7 @@ int8_t SBT_DeleteAllNodes(TValue value) {
 // Напечатать вершины поддерева t
 
 void SBT_PrintAllNodes_At(int8_t depth, TNodeIndex t) {
+	int8_t i;
 
 	if ((NU <= 0) || (t < 0)) {
 		return; // выйти, если вершины нет
@@ -592,7 +588,7 @@ void SBT_PrintAllNodes_At(int8_t depth, TNodeIndex t) {
 	if (aR[t] >= 0) SBT_PrintAllNodes_At(depth + 1, aR[t]);
 
 	if (!((aU[t] == -1) && (aL[t] == -1) && (aR[t] == -1)) || (t == ROOT)) { // ? что будет если напечатать при -1
-		for (uint8_t i = 0; i < depth; i++) printf(" "); // отступ
+		for (i = 0; i < depth; i++) printf(" "); // отступ
 		printf("+%d, id = %lld, value = %lld, size = %lld\n",
 			(int)depth,
 			(long long int)t,
@@ -783,7 +779,8 @@ void SBT_CheckAllNodes() {
 
 // Полная распечатка всех WORK-,UNUSED-nodes (всё из unCLEAN-области)
 void SBT_DumpAllNodes() {
-	for (uint64_t i = 0; i < NN - NCLEAN; i++) {
+	uint64_t i;
+	for (i = 0; i < NN - NCLEAN; i++) {
 		printf("idx = %lld, value = %lld [unused = %d], left = %lld, right = %lld, parent = %lld, size = %lld\n",
 			(long long int)i,
 			(long long int)aValue[i],

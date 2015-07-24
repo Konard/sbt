@@ -73,4 +73,13 @@ TValue GetValueByIndex(TNodeIndex t);
 void SBT_Initialise();
 void SBT_Deinitialise();
 
+extern TValue *aValue;
+extern TNodeIndex *aUT;
+extern TNodeIndex *aLT;
+extern TNodeIndex *aRT;
+extern TNodeSize *aSize;
+extern uint8_t *aFREE;
+
+extern void SBT_Initialise_Opt();
+
 #endif

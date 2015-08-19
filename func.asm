@@ -13,6 +13,39 @@
 	extern aRT
 	extern aSize
 	extern aFREE
+	extern SBT_DumpAllNodes
+
+%macro	PUSHALL 0
+	PUSH RAX
+	PUSH RBX
+	PUSH RCX
+	PUSH RDX
+
+	PUSH R8
+	PUSH R9
+	PUSH R10
+	PUSH R11
+	PUSH R12
+	PUSH R13
+	PUSH R14
+	PUSH R15
+%endmacro
+
+%macro	POPALL 0
+	POP R15
+	POP R14
+	POP R13
+	POP R12
+	POP R11
+	POP R10
+	POP R9
+	POP R8
+
+	POP RDX
+	POP RCX
+	POP RBX
+	POP RAX
+%endmacro
 
 @L3:
 	MOV EAX, ECX
@@ -87,13 +120,14 @@ SBT_Initialise_Opt:
 
 ; -------------------------------------------------------
 SBT_LeftRotate_Opt:
+
 	; TNodeIndex t
 	CMP RCX,0
-	JB @SBT_LeftRotateRet0 ; if (t < 0) return 0;
+	JL @SBT_LeftRotateRet0 ; if (t < 0) return 0;
 	MOV R8,[aRT]
 	MOV RAX,qword [R8+RCX*8] ; TNodeIndex k = aRT[t];
 	CMP RAX,0
-	JB @SBT_LeftRotateRet0 ; if (k < 0) return 0;
+	JL @SBT_LeftRotateRet0 ; if (k < 0) return 0;
 	MOV R9,[aUT]
 	MOV RBX,qword [R9+RCX*8] ; TNodeIndex p = aUT[t];
 	; RAX = k;
@@ -142,7 +176,7 @@ SBT_LeftRotate_Opt:
 
 	ADD R15,R14 ; aSize[t] = s_l + s_r + 1;
 	INC R15
-	MOV qword [R11+RCX*8],RDX
+	MOV qword [R11+RCX*8],R15 ; RDX
 
 	; меняем трёх предков
 	; 1. t.right.parent = t
@@ -188,11 +222,11 @@ SBT_LeftRotate_Opt:
 SBT_RightRotate_Opt:
 	; TNodeIndex t
 	CMP RCX,0
-	JB @SBT_RightRotateRet0 ; if (t < 0) return 0;
+	JL @SBT_RightRotateRet0 ; if (t < 0) return 0;
 	MOV R8,[aLT]
 	MOV RAX,qword [R8+RCX*8] ; TNodeIndex k = aLT[t];
 	CMP RAX,0
-	JB @SBT_RightRotateRet0 ; if (k < 0) return 0;
+	JL @SBT_RightRotateRet0 ; if (k < 0) return 0;
 	MOV R9,[aUT]
 	MOV RBX,qword [R9+RCX*8] ; TNodeIndex p = aUT[t];
 	; RAX = k;
@@ -200,9 +234,9 @@ SBT_RightRotate_Opt:
 	; RCX = t;
 
 	; RAX,RBX,RCX
-	; R8 = [aRT]  ; [aLT]
+	; R8 = [aRT]  -> [aLT]
 	; R9 = [aUT]
-	; R10 = [aLT] ; [aRT]
+	; R10 = [aLT] -> [aRT]
 
 	; поворачиваем ребро дерева
 	MOV R10,[aRT]
@@ -241,14 +275,14 @@ SBT_RightRotate_Opt:
 
 	ADD R15,R14 ; aSize[t] = s_l + s_r + 1;
 	INC R15
-	MOV qword [R11+RCX*8],RDX
+	MOV qword [R11+RCX*8],R15 ; RDX
 
 	; меняем трёх предков
 	; 1. t.right.parent = t
 	; 2. k.parent = t.parent
 	; 3. t.parent = k
 
-	MOV RDX,qword [R8+RCX*8] ; aRT[t] ; aLT[t]
+	MOV RDX,qword [R8+RCX*8] ; aRT[t] -> aLT[t]
 	CMP RDX,-1
 	JE @SBT_RightRotateRT1
 	MOV qword [R9+RDX*8],RCX ; if (aLT[t] != -1) aUT[aLT[t]] = t;

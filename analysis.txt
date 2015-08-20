@@ -1,0 +1,242 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+ 22.21      4.58     4.58 223222785     0.00     0.00  SBT_Maintain_Simpler
+ 19.61      8.62     4.04 10000000     0.00     0.00  SBT_AddNode_At
+ 16.02     11.91     3.30                             _mcount_private
+ 13.74     14.74     2.83                             __fentry__
+ 12.40     17.30     2.56 243222737     0.00     0.00  SBT_Right_Right_size
+  7.94     18.93     1.64 233222761     0.00     0.00  SBT_Right_Left_size
+  3.40     19.64     0.70                             SBT_Left_size_Opt
+  0.92     19.82     0.19                             SBT_Initialise_Opt
+  0.78     19.98     0.16 10000000     0.00     0.00  SBT_AllocateNode
+  0.75     20.14     0.16 19999952     0.00     0.00  SBT_Left_Right_size
+  0.63     20.27     0.13                             SBT_LeftRotate_Opt
+  0.53     20.38     0.11                             SBT_Right_size_Opt
+  0.44     20.47     0.09 19999952     0.00     0.00  SBT_Left_Left_size
+  0.29     20.53     0.06 10000000     0.00     0.00  SBT_AddNode
+  0.12     20.56     0.03                             SBT_Right_size
+  0.07     20.57     0.01                             SBT_Left_size
+  0.05     20.58     0.01        2     5.00     5.00  GetRootIndex
+  0.05     20.59     0.01                             SBT_Maintain
+  0.05     20.60     0.01                             main
+  0.00     20.60     0.00        1     0.00     0.00  SBT_Deinitialise
+  0.00     20.60     0.00        1     0.00     0.00  SBT_Initialise
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+ 
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this 
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+Copyright (C) 2012-2014 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 4 byte(s) for 0.05% of 20.60 seconds
+
+index % time    self  children    called     name
+                                                 <spontaneous>
+[1]     64.5    0.01   13.28                 main [1]
+                0.06   13.21 10000000/10000000     SBT_AddNode [2]
+                0.01    0.00       2/2           GetRootIndex [18]
+                0.00    0.00       1/1           SBT_Initialise [21]
+                0.00    0.00       1/1           SBT_Deinitialise [20]
+-----------------------------------------------
+                0.06   13.21 10000000/10000000     main [1]
+[2]     64.4    0.06   13.21 10000000         SBT_AddNode [2]
+                4.04    9.17 10000000/10000000     SBT_AddNode_At [3]
+-----------------------------------------------
+                             213222786             SBT_AddNode_At [3]
+                4.04    9.17 10000000/10000000     SBT_AddNode [2]
+[3]     64.1    4.04    9.17 10000000+213222786 SBT_AddNode_At [3]
+                4.58    4.43 223222785/223222785     SBT_Maintain_Simpler [4]
+                0.16    0.00 10000000/10000000     SBT_AllocateNode [11]
+                             213222786             SBT_AddNode_At [3]
+-----------------------------------------------
+                             39999904             SBT_Maintain_Simpler [4]
+                4.58    4.43 223222785/223222785     SBT_AddNode_At [3]
+[4]     43.7    4.58    4.43 223222785+39999904 SBT_Maintain_Simpler [4]
+                2.56    0.00 243222737/243222737     SBT_Right_Right_size [7]
+                1.64    0.00 233222761/233222761     SBT_Right_Left_size [8]
+                0.16    0.00 19999952/19999952     SBT_Left_Right_size [12]
+                0.09    0.00 19999952/19999952     SBT_Left_Left_size [15]
+                             39999904             SBT_Maintain_Simpler [4]
+-----------------------------------------------
+                                                 <spontaneous>
+[5]     16.0    3.30    0.00                 _mcount_private [5]
+-----------------------------------------------
+                                                 <spontaneous>
+[6]     13.7    2.83    0.00                 __fentry__ [6]
+-----------------------------------------------
+                2.56    0.00 243222737/243222737     SBT_Maintain_Simpler [4]
+[7]     12.4    2.56    0.00 243222737         SBT_Right_Right_size [7]
+-----------------------------------------------
+                1.64    0.00 233222761/233222761     SBT_Maintain_Simpler [4]
+[8]      7.9    1.64    0.00 233222761         SBT_Right_Left_size [8]
+-----------------------------------------------
+                                                 <spontaneous>
+[9]      3.4    0.70    0.00                 SBT_Left_size_Opt [9]
+-----------------------------------------------
+                                                 <spontaneous>
+[10]     0.9    0.19    0.00                 SBT_Initialise_Opt [10]
+-----------------------------------------------
+                0.16    0.00 10000000/10000000     SBT_AddNode_At [3]
+[11]     0.8    0.16    0.00 10000000         SBT_AllocateNode [11]
+-----------------------------------------------
+                0.16    0.00 19999952/19999952     SBT_Maintain_Simpler [4]
+[12]     0.8    0.16    0.00 19999952         SBT_Left_Right_size [12]
+-----------------------------------------------
+                                                 <spontaneous>
+[13]     0.6    0.13    0.00                 SBT_LeftRotate_Opt [13]
+-----------------------------------------------
+                                                 <spontaneous>
+[14]     0.5    0.11    0.00                 SBT_Right_size_Opt [14]
+-----------------------------------------------
+                0.09    0.00 19999952/19999952     SBT_Maintain_Simpler [4]
+[15]     0.4    0.09    0.00 19999952         SBT_Left_Left_size [15]
+-----------------------------------------------
+                                                 <spontaneous>
+[16]     0.1    0.03    0.00                 SBT_Right_size [16]
+-----------------------------------------------
+                                                 <spontaneous>
+[17]     0.1    0.01    0.00                 SBT_Left_size [17]
+-----------------------------------------------
+                0.01    0.00       2/2           main [1]
+[18]     0.0    0.01    0.00       2         GetRootIndex [18]
+-----------------------------------------------
+                                                 <spontaneous>
+[19]     0.0    0.01    0.00                 SBT_Maintain [19]
+-----------------------------------------------
+                0.00    0.00       1/1           main [1]
+[20]     0.0    0.00    0.00       1         SBT_Deinitialise [20]
+-----------------------------------------------
+                0.00    0.00       1/1           main [1]
+[21]     0.0    0.00    0.00       1         SBT_Initialise [21]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function is in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+Copyright (C) 2012-2014 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+Index by function name
+
+  [18] GetRootIndex           [13] SBT_LeftRotate_Opt      [8] SBT_Right_Left_size
+   [2] SBT_AddNode            [15] SBT_Left_Left_size      [7] SBT_Right_Right_size
+   [3] SBT_AddNode_At         [12] SBT_Left_Right_size    [16] SBT_Right_size
+  [11] SBT_AllocateNode       [17] SBT_Left_size          [14] SBT_Right_size_Opt
+  [20] SBT_Deinitialise        [9] SBT_Left_size_Opt       [6] __fentry__
+  [21] SBT_Initialise         [19] SBT_Maintain            [5] _mcount_private
+  [10] SBT_Initialise_Opt      [4] SBT_Maintain_Simpler    [1] main

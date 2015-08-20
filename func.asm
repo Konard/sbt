@@ -120,7 +120,6 @@ SBT_Initialise_Opt:
 
 ; -------------------------------------------------------
 SBT_LeftRotate_Opt:
-
 	; TNodeIndex t
 	CMP RCX,0
 	JL @SBT_LeftRotateRet0 ; if (t < 0) return 0;

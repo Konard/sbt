@@ -1,11 +1,10 @@
 
 #include "sbt.h"
-#include <stdio.h> // printf()
+#include <stdio.h>
 #include <malloc.h>
 
 // Массив, его размер
-
-const uint64_t NNSTART = 10000000;
+const uint64_t NNSTART = 1000;
 const uint64_t NNPLUS = 20000;
 
 // Разделяем массив структур на массивы по отдельным полям
@@ -36,16 +35,7 @@ void SBT_Initialise() {
 	aFREE = (uint8_t *)malloc(NN*sizeof(uint8_t));
 
 	SBT_Initialise_Opt();
-/*
-	for (t = 0; t < NN; t++) {
-		aValue[t] = 0;	// значение, привязанное к ноде
-		aUT[t] = -1;	// ссылка на уровень выше
-		aLT[t] = -1;	// ссылка на левое поддерево, = -1, если нет дочерних вершин
-		aRT[t] = -1;	// ссылка на правое поддерево
-		aSize[t] = 0;	// size в понимании SBT
-		aFREE[t] = 0x01;
-	}
-*/
+
 	NU = 0; // число вершин в дереве, использованные (USED)
 	ROOT = -1; // дерево
 	FREE = -1; // список неиспользованных
@@ -226,22 +216,22 @@ int8_t SBT_Maintain_Simpler(TNodeIndex t, int8_t flag) {
 	// поместили слева, flag == 0
 	if (flag == 0) {
 		if (SBT_Left_Left_size(t) > SBT_Right_size(t)) {
-			SBT_RightRotate(t);
+			SBT_RightRotate_Opt(t);
 		}
 		else if (SBT_Left_Right_size(t) > SBT_Right_size(t)) {
-			SBT_LeftRotate(aLT[t]);
-			SBT_RightRotate(t);
+			SBT_LeftRotate_Opt(aLT[t]);
+			SBT_RightRotate_Opt(t);
 		}
 		else { return 0; }
 	}
 	// поместили справа, flag == 1
 	else {
 		if (SBT_Right_Right_size(t) > SBT_Left_size(t)) {
-			SBT_LeftRotate(t);
+			SBT_LeftRotate_Opt(t);
 		}
 		else if (SBT_Right_Left_size(t) > SBT_Left_size(t)) {
-			SBT_RightRotate(aRT[t]);
-			SBT_LeftRotate(t);
+			SBT_RightRotate_Opt(aRT[t]);
+			SBT_LeftRotate_Opt(t);
 		}
 		else { return 0; }
 	}
@@ -252,6 +242,7 @@ int8_t SBT_Maintain_Simpler(TNodeIndex t, int8_t flag) {
 	    if (at_left) t0 = aLT[parent];
 	    else t0 = aRT[parent];
 	}
+
 	SBT_Maintain_Simpler(aLT[t0], 0); // false
 	SBT_Maintain_Simpler(aRT[t0], 1); // true
 	SBT_Maintain_Simpler(t0, 0); // false
@@ -285,14 +276,14 @@ int8_t SBT_Maintain(TNodeIndex t) {
 
 	// поместили слева (?)
 	if (SBT_Left_Left_size(t) > SBT_Right_size(t)) {
-		SBT_RightRotate(t);
+		SBT_RightRotate_Opt(t);
 		CALC_T0
 		SBT_Maintain(aRT[t0]);
 		SBT_Maintain(t0);
 	}
 	else if (SBT_Left_Right_size(t) > SBT_Right_size(t)) {
-		SBT_LeftRotate(aLT[t]);
-		SBT_RightRotate(t);
+		SBT_LeftRotate_Opt(aLT[t]);
+		SBT_RightRotate_Opt(t);
 		CALC_T0
 		SBT_Maintain(aLT[t0]);
 		SBT_Maintain(aRT[t0]);
@@ -300,14 +291,14 @@ int8_t SBT_Maintain(TNodeIndex t) {
 	}
 	// поместили справа (?)
 	else if (SBT_Right_Right_size(t) > SBT_Left_size(t)) {
-		SBT_LeftRotate(t);
+		SBT_LeftRotate_Opt(t);
 		CALC_T0
 		SBT_Maintain(aLT[t0]);
 		SBT_Maintain(t0);
 	}
 	else if (SBT_Right_Left_size(t) > SBT_Left_size(t)) {
-		SBT_RightRotate(aRT[t]);
-		SBT_LeftRotate(t);
+		SBT_RightRotate_Opt(aRT[t]);
+		SBT_LeftRotate_Opt(t);
 		CALC_T0
 		SBT_Maintain(aLT[t0]);
 		SBT_Maintain(aRT[t0]);
@@ -364,7 +355,7 @@ int8_t SBT_AddNode_At(TValue value, TNodeIndex t, TNodeIndex parent) {
 			}
 		}
 	}
-	//SBT_Maintain(t);
+	// SBT_Maintain(t);
 	SBT_Maintain_Simpler(t, (value >= aValue[t]) ? 1 : 0);
 	return 1;
 }
@@ -394,7 +385,7 @@ int8_t SBT_AddNodeUniq(TValue value) {
 // 4. Выполняем балансировку вверх от родителя места, где находилась замена (от parent замены).
 
 int8_t SBT_DeleteNode_At(TValue value, TNodeIndex t, TNodeIndex parent) {
-/*
+
 	if ((NU <= 0) || (t < 0)) {
 		return -1; // ответ: "Не найден"
 	}
@@ -555,8 +546,6 @@ int8_t SBT_DeleteNode_At(TValue value, TNodeIndex t, TNodeIndex parent) {
 	}
 
 	return d;
-*/
-	return 0;
 }
 
 
@@ -783,7 +772,7 @@ void SBT_CheckAllNodes() {
 void SBT_DumpAllNodes() {
 	uint64_t i;
 	for (i = 0; i < NN - NCLEAN; i++) {
-		printf("idx = %lld, value = %lld [unused = %d], left = %lld, right = %lld, parent = %lld, size = %lld\n",
+		printf("[%lld] = %lld L:%lld R:%lld U:%lld SZ:%lld\n",
 			(long long int)i,
 			(long long int)aValue[i],
 			(int)aFREE[i],

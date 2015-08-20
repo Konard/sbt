@@ -209,7 +209,7 @@ SBT_LeftRotate_Opt:
 	RET
 
 @SBT_LeftRotateRBX0:
-	MOV RDX,[ROOT]
+	MOV RDX,ROOT
 	MOV qword [RDX],RAX ; if (p == -1) ROOT = k;
 	MOV RAX,1
 	RET
@@ -308,7 +308,7 @@ SBT_RightRotate_Opt:
 	RET
 
 @SBT_RightRotateRBX0:
-	MOV RDX,[ROOT]
+	MOV RDX,ROOT
 	MOV qword [RDX],RAX ; if (p == -1) ROOT = k;
 	MOV RAX,1
 	RET

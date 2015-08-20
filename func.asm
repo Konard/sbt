@@ -55,6 +55,7 @@
 	RET
 
 SBT_Initialise_Opt:
+	PUSHALL ; можно уменьшить количество регистров
 ;	for (t = 0; t < NN; t++) {
 ;		aValue[t] = 0;	// значение, привязанное к ноде
 ;		aU[t] = -1;	// ссылка на уровень выше
@@ -112,6 +113,7 @@ SBT_Initialise_Opt:
 	ADD RBX,1 ; +BYTE uint8_t
 	LOOPNZ @LoopFREE
 
+	POPALL
 	RET
 
 ; цель оптимизации SBTAMD64 в том, чтобы
@@ -120,6 +122,7 @@ SBT_Initialise_Opt:
 
 ; -------------------------------------------------------
 SBT_LeftRotate_Opt:
+	PUSHALL ; можно уменьшить количество регистров
 	; TNodeIndex t
 	CMP RCX,0
 	JL @SBT_LeftRotateRet0 ; if (t < 0) return 0;
@@ -201,24 +204,29 @@ SBT_LeftRotate_Opt:
 
 	MOV qword [R10+RBX*8],RAX ; if (aLT[p] == t) aLT[p] = k;
 	MOV RAX,1
+	POPALL
 	RET
 @SBT_LeftRotateRTPK:
 	MOV qword [R8+RBX*8],RAX ; else aRT[p] = k;
 	MOV RAX,1
+	POPALL
 	RET
 
 @SBT_LeftRotateRBX0:
 	MOV RDX,ROOT
 	MOV qword [RDX],RAX ; if (p == -1) ROOT = k;
 	MOV RAX,1
+	POPALL
 	RET
 
 @SBT_LeftRotateRet0:
 	MOV RAX,0
+	POPALL
 	RET
 
 ; -------------------------------------------------------
 SBT_RightRotate_Opt:
+	PUSHALL ; можно уменьшить количество регистров
 	; TNodeIndex t
 	CMP RCX,0
 	JL @SBT_RightRotateRet0 ; if (t < 0) return 0;
@@ -300,18 +308,22 @@ SBT_RightRotate_Opt:
 
 	MOV qword [R8+RBX*8],RAX ; if (aLT[p] == t) aLT[p] = k;
 	MOV RAX,1
+	POPALL
 	RET
 @SBT_RightRotateRTPK:
 	MOV qword [R10+RBX*8],RAX ; else aRT[p] = k;
 	MOV RAX,1
+	POPALL
 	RET
 
 @SBT_RightRotateRBX0:
 	MOV RDX,ROOT
 	MOV qword [RDX],RAX ; if (p == -1) ROOT = k;
 	MOV RAX,1
+	POPALL
 	RET
 
 @SBT_RightRotateRet0:
 	MOV RAX,0
+	POPALL
 	RET

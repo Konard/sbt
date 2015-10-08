@@ -1,6 +1,6 @@
 libavl benchmark
 
-See libavl-dev package in Ubuntu Linux or Debian GNU/Linux.
+You need libavl-dev package in Ubuntu Linux or Debian GNU/Linux.
 
 
 Files:
@@ -19,3 +19,11 @@ $ dpkg -L libavl-dev
 /usr/share/doc/libavl-dev/copyright
 /usr/share/doc/libavl-dev/changelog.Debian.gz
 /usr/lib/libavl.so
+
+# 10 million records, 4-byte ASCIIZ-strings
+$ time ./test
+
+real	0m1.266s
+user	0m1.132s
+sys	0m0.132s
+

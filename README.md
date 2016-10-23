@@ -1,10 +1,6 @@
 Мы рассматриваем сбалансированные деревья в определении, данном
-китайским школьником Chen Quifeng.
-Статья "Size Balanced Tree"
-URL: http://yaoziyuan.googlepages.com/SizeBalancedTree.zip
-(Zhongshan Memorial Middle School, Guangdong, China, 2006 год)
-Новый адрес материалов: http://ihome.ust.hk/~cs_cqx/SBT.zip
-Новый E-mail Chen'а: chenqifeng22@gmail.com
+китайским школьником Chen Quifeng (Zhongshan Memorial Middle School, Guangdong, China, 2006 год, chenqifeng22@gmail.com).
+Оригинальная работа: "[Size Balanced Tree](http://www.scribd.com/doc/3072015/)", [статья в wcipeg вики-энциклопедии](http://wcipeg.com/wiki/Size_Balanced_Tree).
 
 Аналогичную задачу выполняют binary search trees, определенные
 японскими исследователями Youchi Hirai и Kazuhiko Yamamoto.
